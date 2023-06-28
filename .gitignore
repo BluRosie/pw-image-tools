@@ -50,3 +50,7 @@ modules.order
 Module.symvers
 Mkfile.old
 dkms.conf
+
+#outputs
+DECODE_IMG
+ENCODE_IMG
