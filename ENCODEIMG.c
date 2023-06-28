@@ -15,48 +15,48 @@
 // various from nitrogfx
 
 struct Color {
-	unsigned char red;
-	unsigned char green;
-	unsigned char blue;
+    unsigned char red;
+    unsigned char green;
+    unsigned char blue;
 };
 
 struct Palette {
-	struct Color colors[256];
-	int numColors;
-	int bitDepth;
+    struct Color colors[256];
+    int numColors;
+    int bitDepth;
 };
 
 struct Image {
-	int width;
-	int height;
-	int bitDepth;
-	unsigned char *pixels;
-	uint32_t hasPalette;
-	struct Palette palette;
-	uint32_t hasTransparency;
+    int width;
+    int height;
+    int bitDepth;
+    unsigned char *pixels;
+    uint32_t hasPalette;
+    struct Palette palette;
+    uint32_t hasTransparency;
 };
 
 
 void FreeImage(struct Image *image)
 {
-	free(image->pixels);
-	image->pixels = NULL;
+    free(image->pixels);
+    image->pixels = NULL;
 }
 
 static void usage(const char *me)
 {
-	fprintf(stderr, "USAGE: %s <num bytes> file.png file.pw2bpp\n\tvalues can be hex prefixed with '0x' or decimal\n", me);
+    fprintf(stderr, "USAGE: %s <num bytes> file.png file.pw2bpp\n\tvalues can be hex prefixed with '0x' or decimal\n", me);
 }
 
 static int32_t getInt(const char *str)
 {
-	if (!str || !*str)
-		return -1;
-	
-	if (str[0] == '0' && str[1] == 'x')
-		return strtoul(str + 2, NULL, 16);
-	else
-		return strtoul(str, NULL, 10);
+    if (!str || !*str)
+        return -1;
+
+    if (str[0] == '0' && str[1] == 'x')
+        return strtoul(str + 2, NULL, 16);
+    else
+        return strtoul(str, NULL, 10);
 }
 
 
@@ -211,34 +211,34 @@ void ReadPng(char *path, struct Image *image)
 
 int main(int argc, char** argv)
 {
-	int32_t nBytes;
-	uint16_t *encoded;
+    int32_t nBytes;
+    uint16_t *encoded;
     uint8_t *writtenData;
     FILE *fp;
-	int r, c, r2, k=0;
-	
-	if (argc != 4) {
-		usage(argv[0]);
-		return 0;
-	}
-	nBytes = getInt(argv[1]);
-	
-	if (nBytes < 0) {
-		usage(argv[0]);
-		return 0;
-	}
-	
-	//read image
+    int r, c, r2, k=0;
+
+    if (argc != 4) {
+        usage(argv[0]);
+        return 0;
+    }
+    nBytes = getInt(argv[1]);
+
+    if (nBytes < 0) {
+        usage(argv[0]);
+        return 0;
+    }
+
+    //read image
     struct Image image;
     image.bitDepth = 8;
     ReadPng(argv[2], &image); // should be 8bpp
-	encoded = malloc(2*nBytes * sizeof(uint16_t));
-	writtenData = malloc(4*nBytes * sizeof(uint8_t));
+    encoded = malloc(2*nBytes * sizeof(uint16_t));
+    writtenData = malloc(4*nBytes * sizeof(uint8_t));
     for (int i = 0; i < 2*nBytes; i++)
     {
         encoded[i] = 0;
     }
-    
+
     // encode
     for (r = 0; r < image.height; r += 8)
     {
@@ -266,20 +266,20 @@ int main(int argc, char** argv)
             }
         }
     }
-    
+
     for (int i = 0; i < nBytes; i+=2)
     {
         writtenData[i+1] =  encoded[i/2]       & 0xFF;
         writtenData[i]   = (encoded[i/2] >> 8) & 0xFF;
     }
-    
+
     fp = fopen(argv[3], "wb+");
     fwrite(writtenData, nBytes, 1, fp);
     fclose(fp);
     free(encoded);
     free(writtenData);
 
-	FreeImage(&image);
-    
-	return 0;
+    FreeImage(&image);
+
+    return 0;
 }

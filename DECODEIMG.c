@@ -14,48 +14,48 @@
 
 
 struct Color {
-	unsigned char red;
-	unsigned char green;
-	unsigned char blue;
+    unsigned char red;
+    unsigned char green;
+    unsigned char blue;
 };
 
 struct Palette {
-	struct Color colors[256];
-	int numColors;
-	int bitDepth;
+    struct Color colors[256];
+    int numColors;
+    int bitDepth;
 };
 
 struct Image {
-	int width;
-	int height;
-	int bitDepth;
-	unsigned char *pixels;
-	uint32_t hasPalette;
-	struct Palette palette;
-	uint32_t hasTransparency;
+    int width;
+    int height;
+    int bitDepth;
+    unsigned char *pixels;
+    uint32_t hasPalette;
+    struct Palette palette;
+    uint32_t hasTransparency;
 };
 
 
 void FreeImage(struct Image *image)
 {
-	free(image->pixels);
-	image->pixels = NULL;
+    free(image->pixels);
+    image->pixels = NULL;
 }
 
 static void usage(const char *me)
 {
-	fprintf(stderr, "USAGE: %s <offset> <num bytes> <img width> <offset to map file to> output.png < file.2bpp\n\tvalues can be hex prefixed with '0x' or decimal\n", me);
+    fprintf(stderr, "USAGE: %s <offset> <num bytes> <img width> <offset to map file to> output.png < file.2bpp\n\tvalues can be hex prefixed with '0x' or decimal\n", me);
 }
 
 static int32_t getInt(const char *str)
 {
-	if (!str || !*str)
-		return -1;
-	
-	if (str[0] == '0' && str[1] == 'x')
-		return strtoul(str + 2, NULL, 16);
-	else
-		return strtoul(str, NULL, 10);
+    if (!str || !*str)
+        return -1;
+
+    if (str[0] == '0' && str[1] == 'x')
+        return strtoul(str + 2, NULL, 16);
+    else
+        return strtoul(str, NULL, 10);
 }
 
 
@@ -166,100 +166,100 @@ void WritePng(char *path, struct Image *image)
 
 int main(int argc, char** argv)
 {
-	int32_t ofst, nBytes, width, i, nWords, height;
-	uint16_t *inputData;
-	int r, r2, c, c2;
-	
-	if (argc != 6) {
-		usage(argv[0]);
-		return 0;
-	}
-	
-	ofst = getInt(argv[1]);
-	nBytes = getInt(argv[2]);
-	width = getInt(argv[3]);
-    
+    int32_t ofst, nBytes, width, i, nWords, height;
+    uint16_t *inputData;
+    int r, r2, c, c2;
+
+    if (argc != 6) {
+        usage(argv[0]);
+        return 0;
+    }
+
+    ofst = getInt(argv[1]);
+    nBytes = getInt(argv[2]);
+    width = getInt(argv[3]);
+
     ofst = ofst - getInt(argv[4]);
-	
-	if (ofst < 0 || nBytes < 0 || width < 0) {
-		usage(argv[0]);
-		return 0;
-	}
-	
-	if ((nBytes % 2) || ((nBytes / 2)% width)) {
-		fprintf(stderr, "provided width %u does not mesh with provided byte length %u\n", width, nBytes);
-		usage(argv[0]);
-		return 0;
-	}
-	
-	//skip start
-	while (ofst-- && (c = getchar()) != EOF);
-	if (c == EOF) {
-		fprintf(stderr, "input file too short for the given offset\n");
-		usage(argv[0]);
-		return 0;
-	}
-	
-	//alloc space for and read the data
-	nWords = nBytes / 2;
-	inputData = malloc(nBytes * sizeof(uint16_t));
-	for (i = 0; i < nWords; i++) {
-	
-		if ((c = getchar()) == EOF || (c2 = getchar()) == EOF) {
-			fprintf(stderr, "input file too short for the given length\n");
-			usage(argv[0]);
-			return 0;
-		}
-		inputData[i] = (c << 8) + c2;
-	}
-	
-	//alloc space for the image
-	height = nWords * 8 / width;
+
+    if (ofst < 0 || nBytes < 0 || width < 0) {
+        usage(argv[0]);
+        return 0;
+    }
+
+    if ((nBytes % 2) || ((nBytes / 2)% width)) {
+        fprintf(stderr, "provided width %u does not mesh with provided byte length %u\n", width, nBytes);
+        usage(argv[0]);
+        return 0;
+    }
+
+    //skip start
+    while (ofst-- && (c = getchar()) != EOF);
+    if (c == EOF) {
+        fprintf(stderr, "input file too short for the given offset\n");
+        usage(argv[0]);
+        return 0;
+    }
+
+    //alloc space for and read the data
+    nWords = nBytes / 2;
+    inputData = malloc(nBytes * sizeof(uint16_t));
+    for (i = 0; i < nWords; i++) {
+
+        if ((c = getchar()) == EOF || (c2 = getchar()) == EOF) {
+            fprintf(stderr, "input file too short for the given length\n");
+            usage(argv[0]);
+            return 0;
+        }
+        inputData[i] = (c << 8) + c2;
+    }
+
+    //alloc space for the image
+    height = nWords * 8 / width;
     struct Image image;
-	image.pixels = malloc(10*width * height * sizeof(uint8_t));
-    
-	
-	//decode
-	for (r = 0; r < height; r += 8) {
-		for (c = 0; c < width; c++, inputData++) {
-			for (r2 = 0; r2 < 8; r2++) {
-				switch ((*inputData >> r2) & 0x0101) {
-					case 0x000:	//white
-						image.pixels[(r + r2) * width + c] = 0b00;
-						break;
-					case 0x001:	//dark grey
-						image.pixels[(r + r2) * width + c] = 0b01;
-						break;
-					case 0x100:	//light grey
-						image.pixels[(r + r2) * width + c] = 0b10;
-						break;
-					case 0x101:	//black
-						image.pixels[(r + r2) * width + c] = 0b11;
-						break;
-				}
-			}
-		}
-	}
-	
-	fprintf(stderr, "image %u x %u: %s\n", width, height, argv[5]);
-    
+    image.pixels = malloc(10*width * height * sizeof(uint8_t));
+
+
+    //decode
+    for (r = 0; r < height; r += 8) {
+        for (c = 0; c < width; c++, inputData++) {
+            for (r2 = 0; r2 < 8; r2++) {
+                switch ((*inputData >> r2) & 0x0101) {
+                    case 0x000: //white
+                        image.pixels[(r + r2) * width + c] = 0b00;
+                        break;
+                    case 0x001: //dark grey
+                        image.pixels[(r + r2) * width + c] = 0b01;
+                        break;
+                    case 0x100: //light grey
+                        image.pixels[(r + r2) * width + c] = 0b10;
+                        break;
+                    case 0x101: //black
+                        image.pixels[(r + r2) * width + c] = 0b11;
+                        break;
+                }
+            }
+        }
+    }
+
+    fprintf(stderr, "image %u x %u: %s\n", width, height, argv[5]);
+
     struct Palette palette = {
         .colors = {{255, 255, 255}, {168, 168, 168}, {80, 80, 80}, {0, 0, 0}},
         .numColors = 4,
         .bitDepth = 8,
     };
-        
-    
+
+
     image.width = width;
     image.height = height;
     image.bitDepth = 8;
     image.hasPalette = 1;
     image.palette = palette;
     image.hasTransparency = 0;
-    
+
     WritePng(argv[5], &image);
-    
+
     FreeImage(&image);
-	
-	return 0;
+
+    return 0;
 }
